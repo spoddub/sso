@@ -4,15 +4,19 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/golang-migrate/migrate"
+
+	"github.com/golang-migrate/migrate/v4"
+
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func main() {
 	var storagePath, migrationsPath, migrationsTable string
 
-	flag.StringVar(&storagePath, "storage-path", "", "Path to a directory containing migration files")
+	flag.StringVar(&storagePath, "storage-path", "", "Path to the SQLite database file")
 	flag.StringVar(&migrationsPath, "migrations-path", "", "Path to a directory containing migration files")
-	flag.StringVar(&migrationsTable, "migrations-table", "", "Path to a table containing migration files")
+	flag.StringVar(&migrationsTable, "migrations-table", "migrations", "Name of migrations table")
 	flag.Parse()
 
 	if storagePath == "" {
@@ -23,7 +27,10 @@ func main() {
 		panic("migrations-path is required")
 	}
 
-	m, err := migrate.New("file://"+migrationsPath, fmt.Sprintf("sqlite3://%s?x-migrations-table=%s", storagePath, migrationsTable))
+	m, err := migrate.New(
+		"file://"+migrationsPath,
+		fmt.Sprintf("sqlite3://%s?x-migrations-table=%s", storagePath, migrationsTable),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +38,6 @@ func main() {
 	if err := m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
 			fmt.Println("no migrations to apply")
-
 			return
 		}
 
