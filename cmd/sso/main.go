@@ -31,7 +31,10 @@ func main() {
 
 	<-stop
 
-	application.GRPCServer.Stop()
+	if err := application.GRPCServer.Stop(); err != nil {
+		log.Error("failed to stop gRPC server", slog.Any("error", err))
+	}
+
 	log.Info("stopping application")
 }
 

@@ -34,7 +34,7 @@ func TestNewToken(t *testing.T) {
 		t.Fatal("expected token string, got empty string")
 	}
 
-	parsedToken, err := jwtlib.Parse(tokenString, func(token *jwtlib.Token) (interface{}, error) {
+	parsedToken, err := jwtlib.Parse(tokenString, func(_ *jwtlib.Token) (interface{}, error) {
 		return []byte(app.Secret), nil
 	})
 
@@ -94,7 +94,7 @@ func TestNewToken_InvalidSecret(t *testing.T) {
 		t.Fatalf("NewToken returned error: %v", err)
 	}
 
-	parsedToken, err := jwtlib.Parse(tokenString, func(token *jwtlib.Token) (interface{}, error) {
+	parsedToken, err := jwtlib.Parse(tokenString, func(_ *jwtlib.Token) (interface{}, error) {
 		return []byte("wrong-secret"), nil
 	})
 
