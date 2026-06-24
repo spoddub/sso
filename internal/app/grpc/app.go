@@ -2,10 +2,11 @@ package grpcapp
 
 import (
 	"fmt"
-	"google.golang.org/grpc"
 	"log/slog"
 	"net"
 	"sso/internal/grpc/auth"
+
+	"google.golang.org/grpc"
 )
 
 type App struct {
@@ -29,6 +30,12 @@ func New(
 	}
 }
 
+func (a *App) MustRun() {
+	if err := a.Run(); err != nil {
+		panic(err)
+	}
+}
+
 func (a *App) Run() error {
 	const op = "grpcapp.Run"
 
@@ -46,6 +53,16 @@ func (a *App) Run() error {
 	if err := a.GRPCServer.Serve(l); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+
+	return nil
+}
+
+func (a *App) Stop() error {
+	const op = "grpcapp.Stop"
+
+	a.log.With(slog.String("op", op)).Info("stopping gRPC server", slog.Int("port", a.port))
+
+	a.GRPCServer.GracefulStop()
 
 	return nil
 }
