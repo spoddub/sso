@@ -50,7 +50,7 @@ func (s *serverApi) Register(ctx context.Context, req *ssov1.RegisterRequest) (*
 	}
 
 	return &ssov1.RegisterResponse{
-		UserId: userID,
+		UserId: int64(userID),
 	}, nil
 }
 
@@ -59,7 +59,7 @@ func (s *serverApi) IsAdmin(ctx context.Context, req *ssov1.IsAdminRequest) (*ss
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	isAdmin, err := s.auth.IsAdmin(ctx, req.GetUserId())
+	isAdmin, err := s.auth.IsAdmin(ctx, int(req.GetUserId()))
 	if err != nil {
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
