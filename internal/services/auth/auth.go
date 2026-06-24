@@ -2,11 +2,19 @@ package auth
 
 import (
 	"context"
+	_ "database/sql"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"log/slog"
 	"sso/internal/domain/models"
+	"sso/internal/lib/jwt"
+	"sso/internal/storage"
 	"time"
+)
+
+var (
+	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
 type Auth struct {
@@ -42,7 +50,46 @@ func New(log *slog.Logger, userSaver UserSaver, userProvider UserProvider, appPr
 }
 
 func (a *Auth) Login(ctx context.Context, email, password string, appID int) (string, error) {
-	panic("implement me")
+	const op = "auth.Login"
+
+	log := a.log.With(slog.String("op", op), slog.String("username", email))
+
+	log.Info("attempting to login")
+
+	user, err := a.usrProvider.User(ctx, email)
+	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			a.log.With("user not found", err.Error())
+
+			return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
+		}
+
+		a.log.Error("failed to get user", "error", err)
+
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
+		a.log.Info("invalid credentials", "error", err)
+
+		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
+	}
+
+	app, err := a.appProvider.App(ctx, appID)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	log.Info("user logged successfully")
+
+	token, err := jwt.NewToken(user, app, a.tokenTTL)
+	if err != nil {
+		a.log.Error("failed to generate token", "error", err)
+
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return token, nil
 }
 
 func (a *Auth) RegisterNewUser(ctx context.Context, email, pass string) (int64, error) {
