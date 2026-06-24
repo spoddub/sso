@@ -119,5 +119,18 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email, pass string) (int64, 
 }
 
 func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
-	panic("implement me")
+	const op = "auth.IsAdmin"
+
+	log := a.log.With(slog.String("op", op), slog.String("userID", fmt.Sprint(userID)))
+
+	log.Info("checking if user is admin")
+
+	isAdmin, err := a.usrProvider.IsAdmin(ctx, userID)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+
+	log.Info("checked if user is admin", slog.Bool("is_admin", isAdmin))
+
+	return isAdmin, nil
 }
